@@ -17,6 +17,11 @@ class Alerta(BaseModel):
     leitura_indice: int
 
 
+class AlertaClassificado(Alerta):
+    """Alerta já comparado contra o gabarito, com sua classificação de acerto."""
+    classificacao: str
+
+
 class Metrica(BaseModel):
     """Resume o desempenho de um algoritmo para um tipo de evento em uma execução."""
     algoritmo: str
