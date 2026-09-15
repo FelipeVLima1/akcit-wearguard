@@ -1,5 +1,8 @@
 import sqlite3
+from datetime import datetime, timezone
+import numpy as np
 from src.config import CAMINHO_BANCO
+from src.modelos import AlertaClassificado, EventoGabarito, Metrica
 
 ESQUEMA_SQL = """
 CREATE TABLE IF NOT EXISTS execucoes (
@@ -63,6 +66,36 @@ def criar_esquema() -> None:
     conexao.executescript(ESQUEMA_SQL)
     conexao.commit()
     conexao.close()
+
+
+def criar_execucao(conexao: sqlite3.Connection) -> int:
+    """Registra uma nova execução do pipeline e retorna o seu id."""
+    cursor = conexao.execute("INSERT INTO execucoes (criado_em) VALUES (?)", (datetime.now(timezone.utc).isoformat(),))
+    return cursor.lastrowid
+
+
+def salvar_leituras(conexao: sqlite3.Connection, execucao_id: int, sinais: dict[str, np.ndarray]) -> None:
+    """Salva todas as leituras finais de cada sinal vital simulado."""
+    linhas = [(execucao_id, sinal, indice, float(valor)) for sinal, serie in sinais.items() for indice, valor in enumerate(serie)]
+    conexao.executemany("INSERT INTO leituras (execucao_id, sinal, indice_leitura, valor) VALUES (?, ?, ?, ?)", linhas)
+
+
+def salvar_gabarito(conexao: sqlite3.Connection, execucao_id: int, eventos: list[EventoGabarito]) -> None:
+    """Salva os eventos anômalos rotulados que formam o gabarito da execução."""
+    linhas = [(execucao_id, evento.sinal, evento.tipo_evento, evento.leitura_inicio, evento.leitura_fim) for evento in eventos]
+    conexao.executemany("INSERT INTO eventos_gabarito (execucao_id, sinal, tipo_evento, leitura_inicio, leitura_fim) VALUES (?, ?, ?, ?, ?)", linhas)
+
+
+def salvar_alertas_classificados(conexao: sqlite3.Connection, execucao_id: int, alertas: list[AlertaClassificado]) -> None:
+    """Salva os alertas emitidos pelos algoritmos já classificados contra o gabarito."""
+    linhas = [(execucao_id, alerta.algoritmo, alerta.sinal, alerta.tipo_evento, alerta.leitura_indice, alerta.classificacao) for alerta in alertas]
+    conexao.executemany("INSERT INTO alertas (execucao_id, algoritmo, sinal, tipo_evento, leitura_indice, classificacao) VALUES (?, ?, ?, ?, ?, ?)", linhas)
+
+
+def salvar_metricas(conexao: sqlite3.Connection, execucao_id: int, metricas: list[Metrica]) -> None:
+    """Salva as métricas finais de desempenho de cada algoritmo por tipo de evento."""
+    linhas = [(execucao_id, metrica.algoritmo, metrica.tipo_evento, metrica.verdadeiros_positivos, metrica.falsos_positivos, metrica.falsos_negativos, metrica.tempo_medio_deteccao) for metrica in metricas]
+    conexao.executemany("INSERT INTO metricas (execucao_id, algoritmo, tipo_evento, verdadeiros_positivos, falsos_positivos, falsos_negativos, tempo_medio_deteccao) VALUES (?, ?, ?, ?, ?, ?, ?)", linhas)
 
 
 if __name__ == "__main__":
