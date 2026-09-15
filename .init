@@ -1,0 +1,62 @@
+PROJETO: AKCIT WearGuard
+
+Este é um projeto de pós-graduação (TCC da Especialização em Tecnologias Imersivas do
+Centro de Competência EMBRAPII em Tecnologias Imersivas, AKCIT/UFG), autoria de
+Felipe Viana de Lima, Erica Veras e Victor. Todos os dados de contexto, justificativa,
+metodologia, hipótese e referências bibliográficas do projeto estão detalhados no PDF
+"Felipe_Victor_Erica_Stage_2_AJUSTADO (1).pdf", localizado na pasta pai deste repositório.
+
+RESUMO DO PROJETO
+
+Tema: uso de wearables e sensores no monitoramento remoto de pacientes.
+
+Pergunta de pesquisa: o uso de critérios de persistência em sistemas de monitoramento
+remoto baseados em dados simulados de wearables melhora a detecção de anomalias
+fisiológicas em comparação com métodos de limiar simples?
+
+Hipótese: um algoritmo de detecção com critério de persistência (múltiplas leituras
+consecutivas fora da faixa de normalidade) apresenta menor taxa de falsos positivos do
+que um método de limiar simples, ao custo de um tempo médio de detecção levemente
+superior, ao identificar quatro eventos fisiológicos: taquicardia, bradicardia, hipóxia
+e febre.
+
+Objetivo geral: desenvolver e testar um protótipo de sistema de monitoramento remoto
+(WearGuard) que analisa dados simulados de frequência cardíaca, SpO2 e temperatura
+corporal, comparando um algoritmo com critério de persistência contra um método de
+limiar simples (baseline), e disponibilizar os resultados em um dashboard interativo.
+
+Método (resumo): os dados são sintéticos (sem participantes humanos reais, dispensando
+Comitê de Ética / Plataforma Brasil). O simulador gera um sinal-base dentro da faixa de
+normalidade, aplica ruído gaussiano controlado e insere eventos anômalos rotulados em
+instantes conhecidos, registrando um gabarito (ground truth). Os dois algoritmos rodam
+sobre o mesmo conjunto de dados e os alertas emitidos são comparados contra o gabarito
+para calcular verdadeiros positivos, falsos positivos e falsos negativos, além do tempo
+médio de detecção.
+
+Limites de referência clínica usados nas regras de detecção:
+- Frequência cardíaca: normal 60-100 bpm; > 100 = taquicardia; < 60 = bradicardia
+- SpO2: normal 95-100%; < 90% = hipóxia
+- Temperatura corporal: normal 36.1-37.2 C; > 37.8 C = febre
+
+DECISÕES TÉCNICAS PARA ESTA IMPLEMENTAÇÃO
+
+- Orquestração do pipeline (simular -> injetar ruído -> inserir eventos -> rodar os dois
+  algoritmos -> comparar -> calcular métricas -> persistir) feita com LangGraph, como um
+  grafo de estados, não como agente conversacional.
+- Sem rotas HTTP. Tudo implementado como funções internas em Python, simples e bem
+  divididas por responsabilidade. Se em algum ponto for necessário algo no estilo FastAPI,
+  usar apenas para estruturar código (ex: modelos Pydantic), nunca para expor endpoints.
+- Persistência local em SQLite (pasta data/), sem serviços externos.
+- Logging estruturado em arquivo (pasta logs/) e console.
+- Frontend (dashboard) é a última etapa do checklist: Streamlit, organizado em uma pasta
+  front/ própria, com boa divisão de componentes e visual cuidado (não é prioridade até
+  o backend estar pronto e testado).
+- Estilo de código segue o arquivo code_style.md na pasta pai (tipagem sempre, Pydantic
+  para objetos, espaços ao redor de "=", parâmetros na mesma linha, comentários só em
+  funções, sem emojis).
+- Commits em português, seguindo Conventional Commits (feat, fix, refactor, chore,
+  delete), um commit por etapa concluída do checklist.
+- Git iniciado localmente nesta pasta. O repositório remoto (GitHub) ainda não existe,
+  será criado depois pelo autor do projeto.
+
+Ver CHECKLIST.md para o plano de desenvolvimento passo a passo.
