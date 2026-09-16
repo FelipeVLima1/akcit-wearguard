@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import datetime, timezone
 import numpy as np
-from src.config import CAMINHO_BANCO
+from src.config import CAMINHO_BANCO, ParametrosDeteccao, ParametrosSimulacao
 from src.modelos import AlertaClassificado, EventoGabarito, Metrica
 
 ESQUEMA_SQL = """
@@ -37,6 +37,18 @@ CREATE TABLE IF NOT EXISTS alertas (
     tipo_evento TEXT NOT NULL,
     leitura_indice INTEGER NOT NULL,
     classificacao TEXT NOT NULL,
+    FOREIGN KEY (execucao_id) REFERENCES execucoes(id)
+);
+
+CREATE TABLE IF NOT EXISTS parametros_execucao (
+    execucao_id INTEGER PRIMARY KEY,
+    duracao_total_leituras INTEGER NOT NULL,
+    intervalo_leitura_segundos INTEGER NOT NULL,
+    desvio_padrao_ruido REAL NOT NULL,
+    duracao_evento_leituras INTEGER NOT NULL,
+    numero_eventos_por_tipo INTEGER NOT NULL,
+    semente_aleatoria INTEGER NOT NULL,
+    leituras_consecutivas_para_alerta INTEGER NOT NULL,
     FOREIGN KEY (execucao_id) REFERENCES execucoes(id)
 );
 
@@ -90,6 +102,11 @@ def salvar_alertas_classificados(conexao: sqlite3.Connection, execucao_id: int, 
     """Salva os alertas emitidos pelos algoritmos já classificados contra o gabarito."""
     linhas = [(execucao_id, alerta.algoritmo, alerta.sinal, alerta.tipo_evento, alerta.leitura_indice, alerta.classificacao) for alerta in alertas]
     conexao.executemany("INSERT INTO alertas (execucao_id, algoritmo, sinal, tipo_evento, leitura_indice, classificacao) VALUES (?, ?, ?, ?, ?, ?)", linhas)
+
+
+def salvar_parametros(conexao: sqlite3.Connection, execucao_id: int, parametros_simulacao: ParametrosSimulacao, parametros_deteccao: ParametrosDeteccao) -> None:
+    """Salva os parâmetros de simulação e detecção usados numa execução."""
+    conexao.execute("INSERT INTO parametros_execucao (execucao_id, duracao_total_leituras, intervalo_leitura_segundos, desvio_padrao_ruido, duracao_evento_leituras, numero_eventos_por_tipo, semente_aleatoria, leituras_consecutivas_para_alerta) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (execucao_id, parametros_simulacao.duracao_total_leituras, parametros_simulacao.intervalo_leitura_segundos, parametros_simulacao.desvio_padrao_ruido, parametros_simulacao.duracao_evento_leituras, parametros_simulacao.numero_eventos_por_tipo, parametros_simulacao.semente_aleatoria, parametros_deteccao.leituras_consecutivas_para_alerta))
 
 
 def salvar_metricas(conexao: sqlite3.Connection, execucao_id: int, metricas: list[Metrica]) -> None:

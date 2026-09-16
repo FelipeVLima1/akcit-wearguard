@@ -8,9 +8,11 @@ import pandas as pd
 import streamlit as st
 from front.componentes.barra_lateral import selecionar_execucao
 from front.componentes.cartoes_metricas import exibir_cartoes_metricas
+from front.componentes.cartoes_status import exibir_cartoes_status
 from front.componentes.grafico_sinais import montar_grafico_sinal
 from front.componentes.tabela_alertas import montar_tabela_alertas
-from front.dados.consultas import obter_alertas, obter_gabarito, obter_leituras, obter_metricas
+from front.dados.consultas import obter_alertas, obter_execucao, obter_gabarito, obter_leituras, obter_metricas, obter_parametros
+from front.dados.derivadas import montar_resumo_comparativo
 from front.estilo.tema import CSS_PERSONALIZADO
 from src.config import FAIXAS_CLINICAS
 from src.modelos import AlertaClassificado, EventoGabarito, Metrica
@@ -29,30 +31,49 @@ def exibir_cabecalho() -> None:
 
 
 def exibir_aba_visao_geral(leituras: dict[str, np.ndarray], gabarito: list[EventoGabarito], alertas: list[AlertaClassificado]) -> None:
-    """Mostra o gráfico de cada sinal vital com a faixa normal, os eventos reais e os alertas emitidos."""
+    """Mostra os três sinais vitais lado a lado, com a faixa normal, os eventos reais e os alertas emitidos."""
     st.subheader("Sinais vitais simulados")
-    for faixa in FAIXAS_CLINICAS:
-        if faixa.nome in leituras:
-            figura = montar_grafico_sinal(faixa = faixa, valores = leituras[faixa.nome], eventos = gabarito, alertas = alertas)
-            st.pyplot(figura)
+    st.caption("Área azul: faixa normal. Área vermelha: evento real inserido. Círculo laranja: alerta do limiar simples. Losango verde: alerta da persistência.")
+
+    colunas = st.columns(len(FAIXAS_CLINICAS))
+    for coluna, faixa in zip(colunas, FAIXAS_CLINICAS):
+        with coluna:
+            if faixa.nome in leituras:
+                figura = montar_grafico_sinal(faixa = faixa, valores = leituras[faixa.nome], eventos = gabarito, alertas = alertas)
+                st.pyplot(figura, use_container_width = True)
 
 
 def exibir_aba_alertas(alertas: list[AlertaClassificado]) -> None:
-    """Mostra a tabela com todos os alertas emitidos pelos dois algoritmos."""
+    """Mostra a tabela com todos os alertas emitidos pelos dois algoritmos, com filtros básicos."""
     st.subheader("Alertas emitidos")
     tabela = montar_tabela_alertas(alertas)
     if tabela.empty:
         st.info("Nenhum alerta emitido nesta execução.")
         return
-    st.dataframe(tabela, use_container_width = True, hide_index = True)
+
+    coluna_algoritmo, coluna_classificacao = st.columns(2)
+    with coluna_algoritmo:
+        algoritmos_escolhidos = st.multiselect(label = "Algoritmo", options = sorted(tabela["Algoritmo"].unique()), default = sorted(tabela["Algoritmo"].unique()))
+    with coluna_classificacao:
+        classificacoes_escolhidas = st.multiselect(label = "Classificação", options = sorted(tabela["Classificação"].unique()), default = sorted(tabela["Classificação"].unique()))
+
+    tabela_filtrada = tabela[tabela["Algoritmo"].isin(algoritmos_escolhidos) & tabela["Classificação"].isin(classificacoes_escolhidas)]
+    st.dataframe(tabela_filtrada, use_container_width = True, hide_index = True)
+    st.caption(f"{len(tabela_filtrada)} de {len(tabela)} alertas exibidos")
 
 
 def exibir_aba_metricas(metricas: list[Metrica]) -> None:
-    """Mostra os cartões de resumo e a tabela detalhada de métricas por tipo de evento."""
+    """Mostra os cartões de resumo, o comparativo lado a lado e a tabela detalhada de métricas."""
     st.subheader("Desempenho comparado dos algoritmos")
     exibir_cartoes_metricas(metricas)
+
     st.divider()
-    st.subheader("Detalhamento por tipo de evento")
+    st.subheader("Comparativo por tipo de evento")
+    st.caption("Redução de FP (%) mostra o quanto a persistência diminuiu os falsos positivos em relação ao limiar simples nesse tipo de evento.")
+    st.dataframe(montar_resumo_comparativo(metricas), use_container_width = True, hide_index = True)
+
+    st.divider()
+    st.subheader("Métricas completas por algoritmo e tipo de evento")
     linhas = [metrica.model_dump() for metrica in metricas]
     st.dataframe(pd.DataFrame(linhas), use_container_width = True, hide_index = True)
 
@@ -66,10 +87,15 @@ def main() -> None:
     if execucao_id is None:
         return
 
+    execucao = obter_execucao(execucao_id)
+    parametros = obter_parametros(execucao_id)
     leituras = obter_leituras(execucao_id)
     gabarito = obter_gabarito(execucao_id)
     alertas = obter_alertas(execucao_id)
     metricas = obter_metricas(execucao_id)
+
+    exibir_cartoes_status(execucao_id = execucao_id, criado_em = execucao[1] if execucao else "-", parametros = parametros, gabarito = gabarito)
+    st.divider()
 
     aba_visao_geral, aba_alertas, aba_metricas = st.tabs(["Visão geral", "Alertas", "Métricas"])
     with aba_visao_geral:

@@ -49,9 +49,11 @@ Frontend fica propositalmente por último.
 
 ## Fase 5 — Persistência dos resultados
 
-- [x] Salvar sinais simulados, gabarito, alertas e métricas no SQLite
-- [ ] Função de consulta para recuperar uma execução completa por id (adiado até
-      ser necessário para o dashboard, na Fase 7)
+- [x] Salvar sinais simulados, gabarito, alertas, métricas e parâmetros
+      (simulação e detecção) usados em cada execução no SQLite
+- [x] Funções de consulta para recuperar uma execução completa por id
+      (front/dados/consultas.py: execução, parâmetros, leituras, gabarito,
+      alertas, métricas)
 
 ## Fase 6 — Execução ponta a ponta
 
@@ -75,6 +77,14 @@ Frontend fica propositalmente por último.
 - [x] Botão na barra lateral para rodar uma nova simulação direto da interface
 - [x] Testado subindo o servidor Streamlit localmente (headless) e validando as
       funções de dados/gráfico/tabela com o banco real
+- [x] Cards de status da execução (parâmetros de simulação/detecção usados,
+      total de eventos no gabarito)
+- [x] Gráficos dos 3 sinais vitais lado a lado (menores, cabem juntos na tela)
+- [x] Filtros na tabela de alertas (por algoritmo e por classificação)
+- [x] Indicadores derivados: precisão, taxa de falsos positivos, e tabela
+      comparativa lado a lado com redução percentual de FP por tipo de evento
+- [x] Teste automatizado do dashboard inteiro via streamlit.testing.v1.AppTest
+      (tests/test_dashboard.py)
 
 ## Observações
 

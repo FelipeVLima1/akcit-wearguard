@@ -39,6 +39,25 @@ def obter_alertas(execucao_id: int) -> list[AlertaClassificado]:
     return [AlertaClassificado(algoritmo = algoritmo, sinal = sinal, tipo_evento = tipo_evento, leitura_indice = leitura_indice, classificacao = classificacao) for algoritmo, sinal, tipo_evento, leitura_indice, classificacao in linhas]
 
 
+def obter_execucao(execucao_id: int) -> tuple[int, str] | None:
+    """Recupera o id e a data de criação de uma execução específica."""
+    conexao = obter_conexao()
+    linha = conexao.execute("SELECT id, criado_em FROM execucoes WHERE id = ?", (execucao_id,)).fetchone()
+    conexao.close()
+    return linha
+
+
+def obter_parametros(execucao_id: int) -> dict:
+    """Recupera os parâmetros de simulação e detecção usados numa execução."""
+    conexao = obter_conexao()
+    linha = conexao.execute("SELECT duracao_total_leituras, intervalo_leitura_segundos, desvio_padrao_ruido, duracao_evento_leituras, numero_eventos_por_tipo, semente_aleatoria, leituras_consecutivas_para_alerta FROM parametros_execucao WHERE execucao_id = ?", (execucao_id,)).fetchone()
+    conexao.close()
+    if linha is None:
+        return {}
+    campos = ["duracao_total_leituras", "intervalo_leitura_segundos", "desvio_padrao_ruido", "duracao_evento_leituras", "numero_eventos_por_tipo", "semente_aleatoria", "leituras_consecutivas_para_alerta"]
+    return dict(zip(campos, linha))
+
+
 def obter_metricas(execucao_id: int) -> list[Metrica]:
     """Recupera as métricas finais de desempenho de cada algoritmo numa execução."""
     conexao = obter_conexao()

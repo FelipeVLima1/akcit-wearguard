@@ -1,5 +1,5 @@
 from src.config import FAIXAS_CLINICAS
-from src.database import criar_esquema, criar_execucao, obter_conexao, salvar_alertas_classificados, salvar_gabarito, salvar_leituras, salvar_metricas
+from src.database import criar_esquema, criar_execucao, obter_conexao, salvar_alertas_classificados, salvar_gabarito, salvar_leituras, salvar_metricas, salvar_parametros
 from src.deteccao.limiar_simples import NOME_ALGORITMO as NOME_LIMIAR_SIMPLES, detectar_limiar_simples
 from src.deteccao.persistencia import NOME_ALGORITMO as NOME_PERSISTENCIA, detectar_persistencia
 from src.avaliacao.comparador import classificar_alertas, listar_eventos_nao_detectados
@@ -81,6 +81,7 @@ def no_persistir_resultados(estado: EstadoWearGuard) -> dict:
     criar_esquema()
     conexao = obter_conexao()
     execucao_id = criar_execucao(conexao)
+    salvar_parametros(conexao, execucao_id, estado["parametros_simulacao"], estado["parametros_deteccao"])
     salvar_leituras(conexao, execucao_id, estado["sinais_finais"])
     salvar_gabarito(conexao, execucao_id, estado["gabarito"])
     salvar_alertas_classificados(conexao, execucao_id, estado["alertas_classificados"])

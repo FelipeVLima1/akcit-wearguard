@@ -8,7 +8,7 @@ from src.modelos import AlertaClassificado, EventoGabarito
 
 def montar_grafico_sinal(faixa: FaixaClinica, valores: np.ndarray, eventos: list[EventoGabarito], alertas: list[AlertaClassificado]) -> matplotlib.figure.Figure:
     """Monta o gráfico de um sinal vital com a faixa normal, os eventos reais e os alertas dos dois algoritmos."""
-    figura, eixo = plt.subplots(figsize = (10, 3))
+    figura, eixo = plt.subplots(figsize = (4.6, 3.2))
 
     eixo.axhspan(faixa.minimo_normal, faixa.maximo_normal, color = CORES["faixa_normal"], zorder = 0, label = "Faixa normal")
 
@@ -29,9 +29,10 @@ def montar_grafico_sinal(faixa: FaixaClinica, valores: np.ndarray, eventos: list
         indices = [alerta.leitura_indice for alerta in alertas_persistencia]
         eixo.scatter(indices, valores[indices], color = CORES["persistencia"], marker = "D", s = 36, zorder = 4, label = "Alerta persistência")
 
-    eixo.set_title(f"{faixa.nome.replace('_', ' ').title()} ({faixa.unidade})")
-    eixo.set_xlabel("Leitura")
-    eixo.set_ylabel(faixa.unidade)
-    eixo.legend(loc = "upper right", fontsize = 8, framealpha = 0.9)
+    eixo.set_title(f"{faixa.nome.replace('_', ' ').title()} ({faixa.unidade})", fontsize = 10)
+    eixo.set_xlabel("Leitura", fontsize = 8)
+    eixo.set_ylabel(faixa.unidade, fontsize = 8)
+    eixo.tick_params(labelsize = 7)
+    eixo.legend(loc = "upper right", fontsize = 6, framealpha = 0.9)
     figura.tight_layout()
     return figura
