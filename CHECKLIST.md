@@ -63,12 +63,18 @@ Frontend fica propositalmente por último.
 
 ## Fase 7 — Frontend (dashboard) — por último
 
-- [ ] Definir estrutura da pasta front/ (componentes separados, não um único
-      arquivo streamlit gigante)
-- [ ] Tela de visão geral: sinais vitais simulados ao longo do tempo
-- [ ] Tela de alertas: comparação limiar simples vs persistência
-- [ ] Tela de métricas: tempo médio de detecção e taxa de falsos positivos/negativos
-- [ ] Revisão visual (não usar tema padrão "cru" do Streamlit)
+- [x] Definir estrutura da pasta front/ (componentes separados: dados/, componentes/,
+      estilo/, app.py como entrypoint)
+- [x] Tela de visão geral: sinais vitais simulados ao longo do tempo, com faixa
+      normal, eventos reais e alertas dos dois algoritmos sobrepostos no gráfico
+- [x] Tela de alertas: tabela comparando limiar simples vs persistência
+- [x] Tela de métricas: cartões e tabela com tempo médio de detecção e taxa de
+      falsos positivos/negativos por algoritmo e tipo de evento
+- [x] Revisão visual (tema customizado em front/estilo/tema.py, não usa o padrão
+      "cru" do Streamlit)
+- [x] Botão na barra lateral para rodar uma nova simulação direto da interface
+- [x] Testado subindo o servidor Streamlit localmente (headless) e validando as
+      funções de dados/gráfico/tabela com o banco real
 
 ## Observações
 
