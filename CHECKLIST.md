@@ -91,3 +91,33 @@ Frontend fica propositalmente por último.
 - Cada fase concluída gera commit(s) próprio(s) em português, formato
   `tipo: descrição` (feat, fix, refactor, chore, delete).
 - Dúvidas de escopo, parâmetros ou prioridade voltam para o autor antes de assumir.
+
+## Fase 8 — Machine Learning: classificação de arritmias com ECG real (não estava no PDF)
+
+Adicionada depois, a pedido do usuário, para comparar a abordagem baseada em regras
+(Fases 1-7, dados simulados) com uma abordagem de aprendizado de máquina treinada
+com ECG real. Ver docs/machine_learning.md para a explicação completa sem jargão.
+
+- [x] Baixar a base MIT-BIH Arrhythmia Database do PhysioNet (acesso aberto, sem
+      necessidade de conta/API key — ao contrário do Kaggle)
+- [x] src/ml/config.py — parâmetros de extração, mapeamento AAMI de 5 classes,
+      split de pacientes treino (DS1) / teste (DS2) seguindo de Chazal et al. (2004)
+- [x] src/ml/dados.py — extrai os batimentos centrados no pico R de cada registro,
+      normaliza a amplitude e adiciona os intervalos RR (anterior/seguinte) como
+      características extras, com cache em disco (data/mitbih_batimentos.npz)
+- [x] src/ml/modelo.py — treina um Random Forest com class_weight="balanced"
+      (batimentos normais são muito mais frequentes que os demais tipos)
+- [x] src/ml/avaliacao.py — calcula acurácia, precisão/recall/F1 por classe,
+      macro-F1 e matriz de confusão
+- [x] src/ml/database.py — tabelas próprias no mesmo SQLite (modelos_ml,
+      metricas_ml, matriz_confusao_ml)
+- [x] src/ml/treinar.py — script de entrada (`python -m src.ml.treinar`)
+- [x] Aba "Machine Learning" no dashboard (front/): cards de resumo, matriz de
+      confusão em mapa de calor e tabela de métricas por classe — independente
+      da execução simulada selecionada
+- [x] Testes automatizados com dados sintéticos (tests/test_ml.py)
+- [x] docs/machine_learning.md — documentação completa em português simples,
+      incluindo os resultados obtidos e como interpretá-los honestamente
+- [x] Resultado de referência obtido: acurácia 92,2%, macro-F1 0,367 (ver
+      docs/machine_learning.md, seção 9, para a discussão sobre por que o
+      macro-F1 é baixo mesmo com acurácia alta — desbalanceamento de classes)

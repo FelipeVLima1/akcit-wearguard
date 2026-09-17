@@ -7,11 +7,14 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from front.componentes.barra_lateral import selecionar_execucao
+from front.componentes.cartoes_ml import exibir_cartoes_ml
 from front.componentes.cartoes_metricas import exibir_cartoes_metricas
 from front.componentes.cartoes_status import exibir_cartoes_status
+from front.componentes.grafico_confusao import montar_grafico_matriz_confusao
 from front.componentes.grafico_sinais import montar_grafico_sinal
 from front.componentes.tabela_alertas import montar_tabela_alertas
 from front.dados.consultas import obter_alertas, obter_execucao, obter_gabarito, obter_leituras, obter_metricas, obter_parametros
+from front.dados.consultas_ml import obter_ultimo_resultado_ml
 from front.dados.derivadas import montar_resumo_comparativo
 from front.estilo.tema import CSS_PERSONALIZADO
 from src.config import FAIXAS_CLINICAS
@@ -78,32 +81,64 @@ def exibir_aba_metricas(metricas: list[Metrica]) -> None:
     st.dataframe(pd.DataFrame(linhas), use_container_width = True, hide_index = True)
 
 
+def exibir_aba_machine_learning() -> None:
+    """Mostra o resultado do classificador de arritmias treinado com ECG real (MIT-BIH), independente das simulações."""
+    st.subheader("Classificação de arritmias com machine learning (ECG real)")
+    st.caption("Modelo treinado com batimentos reais do MIT-BIH Arrhythmia Database (PhysioNet), com treino e teste separados por paciente (split DS1/DS2 de de Chazal et al., 2004). Não usa os dados simulados das outras abas — ver docs/machine_learning.md para os detalhes.")
+
+    resultado = obter_ultimo_resultado_ml()
+    if resultado is None:
+        st.info("Nenhum modelo treinado ainda. Rode \"python -m src.ml.treinar\" no terminal (com o .venv ativado) para treinar o classificador de arritmias.")
+        return
+
+    exibir_cartoes_ml(resultado)
+    st.divider()
+
+    coluna_matriz, coluna_metricas = st.columns(2)
+    with coluna_matriz:
+        st.markdown("##### Matriz de confusão")
+        st.caption("Linhas: o que o médico anotou. Colunas: o que o modelo previu. A diagonal é o que o modelo acertou.")
+        figura = montar_grafico_matriz_confusao(resultado["matriz_confusao"])
+        st.pyplot(figura, use_container_width = True)
+    with coluna_metricas:
+        st.markdown("##### Métricas por classe")
+        tabela = resultado["metricas_por_classe"][["classe", "precisao", "recall", "f1", "suporte"]].rename(columns = {"classe": "Classe", "precisao": "Precisão", "recall": "Recall", "f1": "F1", "suporte": "Suporte"})
+        tabela["Classe"] = tabela["Classe"].str.title()
+        st.dataframe(tabela, use_container_width = True, hide_index = True)
+
+
 def main() -> None:
     """Monta o dashboard completo do WearGuard."""
     configurar_pagina()
     exibir_cabecalho()
 
     execucao_id = selecionar_execucao()
-    if execucao_id is None:
-        return
 
-    execucao = obter_execucao(execucao_id)
-    parametros = obter_parametros(execucao_id)
-    leituras = obter_leituras(execucao_id)
-    gabarito = obter_gabarito(execucao_id)
-    alertas = obter_alertas(execucao_id)
-    metricas = obter_metricas(execucao_id)
+    aba_visao_geral, aba_alertas, aba_metricas, aba_ml = st.tabs(["Visão geral", "Alertas", "Métricas", "Machine Learning"])
 
-    exibir_cartoes_status(execucao_id = execucao_id, criado_em = execucao[1] if execucao else "-", parametros = parametros, gabarito = gabarito)
-    st.divider()
+    if execucao_id is not None:
+        execucao = obter_execucao(execucao_id)
+        parametros = obter_parametros(execucao_id)
+        leituras = obter_leituras(execucao_id)
+        gabarito = obter_gabarito(execucao_id)
+        alertas = obter_alertas(execucao_id)
+        metricas = obter_metricas(execucao_id)
 
-    aba_visao_geral, aba_alertas, aba_metricas = st.tabs(["Visão geral", "Alertas", "Métricas"])
-    with aba_visao_geral:
-        exibir_aba_visao_geral(leituras, gabarito, alertas)
-    with aba_alertas:
-        exibir_aba_alertas(alertas)
-    with aba_metricas:
-        exibir_aba_metricas(metricas)
+        exibir_cartoes_status(execucao_id = execucao_id, criado_em = execucao[1] if execucao else "-", parametros = parametros, gabarito = gabarito)
+        st.divider()
+
+        with aba_visao_geral:
+            exibir_aba_visao_geral(leituras, gabarito, alertas)
+        with aba_alertas:
+            exibir_aba_alertas(alertas)
+        with aba_metricas:
+            exibir_aba_metricas(metricas)
+    else:
+        with aba_visao_geral:
+            st.info("Nenhuma execução simulada encontrada ainda.")
+
+    with aba_ml:
+        exibir_aba_machine_learning()
 
 
 if __name__ == "__main__":

@@ -59,4 +59,13 @@ DECISÕES TÉCNICAS PARA ESTA IMPLEMENTAÇÃO
 - Git iniciado localmente nesta pasta. O repositório remoto (GitHub) ainda não existe,
   será criado depois pelo autor do projeto.
 
+ADIÇÃO FORA DO ESCOPO ORIGINAL DO PDF: MACHINE LEARNING COM ECG REAL
+
+A pedido do usuário, depois da entrega das Fases 1-7 acima, foi adicionado um módulo de
+Machine Learning (src/ml/) para classificar arritmias a partir de ECG real (base MIT-BIH
+Arrhythmia Database, PhysioNet), como comparação conceitual à abordagem baseada em regras.
+Essa parte não consta no PDF do projeto de pesquisa original — é um adicional. Documentação
+completa, sem jargão técnico, em docs/machine_learning.md (inclui de onde vieram os dados,
+o que é cada métrica, e os resultados obtidos). Ver Fase 8 do CHECKLIST.md.
+
 Ver CHECKLIST.md para o plano de desenvolvimento passo a passo.
