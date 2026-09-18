@@ -40,8 +40,20 @@ CSS_PERSONALIZADO = f"""
         border-radius: 10px;
         overflow: hidden;
     }}
+    div[data-baseweb="tab-list"] {{
+        gap: 4px;
+    }}
     button[data-baseweb="tab"] {{
         font-weight: 600;
+    }}
+    button[data-baseweb="tab"] p {{
+        color: {CORES["texto_suave"]} !important;
+    }}
+    button[data-baseweb="tab"][aria-selected="true"] p {{
+        color: {CORES["destaque"]} !important;
+    }}
+    button[data-baseweb="tab"]:hover p {{
+        color: {CORES["destaque"]} !important;
     }}
 </style>
 """
