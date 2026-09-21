@@ -6,6 +6,42 @@ from src.ml.config import AMOSTRAS_ANTES_PICO, AMOSTRAS_DEPOIS_PICO, CAMINHO_CAC
 logger = criar_logger(nome = "wearguard.ml")
 
 INTERVALO_RR_PADRAO_EM_AMOSTRAS = AMOSTRAS_ANTES_PICO + AMOSTRAS_DEPOIS_PICO
+REGISTROS_MITBIH = REGISTROS_TREINO + REGISTROS_TESTE
+
+
+def garantir_dados_mitbih() -> None:
+    """Baixa os registros MIT-BIH usados pelo treinamento quando necessário."""
+    arquivos_ausentes = [
+        registro
+        for registro in REGISTROS_MITBIH
+        if not all((CAMINHO_DADOS_BRUTOS / f"{registro}{extensao}").exists() for extensao in (".hea", ".dat", ".atr"))
+    ]
+    if not arquivos_ausentes:
+        return
+
+    CAMINHO_DADOS_BRUTOS.mkdir(parents = True, exist_ok = True)
+    logger.info("baixando registros MIT-BIH ausentes: %s", ", ".join(arquivos_ausentes))
+    try:
+        wfdb.dl_database(
+            "mitdb",
+            dl_dir = str(CAMINHO_DADOS_BRUTOS),
+            records = arquivos_ausentes,
+            annotators = ["atr"],
+            keep_subdirs = False,
+        )
+    except Exception as erro:
+        raise RuntimeError(
+            "Nao foi possivel obter os dados MIT-BIH automaticamente. "
+            "Verifique sua conexao com a internet e tente novamente."
+        ) from erro
+
+    arquivos_ainda_ausentes = [
+        registro
+        for registro in arquivos_ausentes
+        if not all((CAMINHO_DADOS_BRUTOS / f"{registro}{extensao}").exists() for extensao in (".hea", ".dat", ".atr"))
+    ]
+    if arquivos_ainda_ausentes:
+        raise RuntimeError(f"Download MIT-BIH incompleto; faltam os registros: {', '.join(arquivos_ainda_ausentes)}")
 
 
 def normalizar_segmento(segmento: np.ndarray) -> np.ndarray:
@@ -65,6 +101,7 @@ def preparar_conjuntos_treino_teste(usar_cache: bool = True) -> tuple[np.ndarray
         logger.info("conjuntos de treino/teste carregados do cache")
         return cache["x_treino"], cache["y_treino"], cache["x_teste"], cache["y_teste"]
 
+    garantir_dados_mitbih()
     x_treino, y_treino = extrair_batimentos_de_varios_registros(REGISTROS_TREINO)
     x_teste, y_teste = extrair_batimentos_de_varios_registros(REGISTROS_TESTE)
 
