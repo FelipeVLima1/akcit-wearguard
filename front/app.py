@@ -65,27 +65,8 @@ def exibir_aba_alertas(alertas: list[AlertaClassificado]) -> None:
     st.caption(f"{len(tabela_filtrada)} de {len(tabela)} alertas exibidos")
 
 
-def exibir_aba_metricas(metricas: list[Metrica]) -> None:
-    """Mostra os cartões de resumo, o comparativo lado a lado e a tabela detalhada de métricas."""
-    st.subheader("Desempenho comparado dos algoritmos")
-    exibir_cartoes_metricas(metricas)
-
-    st.divider()
-    st.subheader("Comparativo por tipo de evento")
-    st.caption("Redução de FP (%) mostra o quanto a persistência diminuiu os falsos positivos em relação ao limiar simples nesse tipo de evento.")
-    st.dataframe(montar_resumo_comparativo(metricas), use_container_width = True, hide_index = True)
-
-    st.divider()
-    st.subheader("Métricas completas por algoritmo e tipo de evento")
-    linhas = [metrica.model_dump() for metrica in metricas]
-    st.dataframe(pd.DataFrame(linhas), use_container_width = True, hide_index = True)
-
-
-def exibir_aba_machine_learning() -> None:
-    """Mostra o resultado do classificador de arritmias treinado com ECG real (MIT-BIH), independente das simulações."""
-    st.subheader("Classificação de arritmias com machine learning (ECG real)")
-    st.caption("Modelo treinado com batimentos reais do MIT-BIH Arrhythmia Database (PhysioNet), com treino e teste separados por paciente (split DS1/DS2 de de Chazal et al., 2004). Não usa os dados simulados das outras abas — ver docs/machine_learning.md para os detalhes.")
-
+def exibir_resultado_ml() -> None:
+    """Mostra os cartões, a matriz de confusão e a tabela de métricas do último modelo de ML treinado."""
     resultado = obter_ultimo_resultado_ml()
     if resultado is None:
         st.info("Nenhum modelo treinado ainda. Rode \"python -m src.ml.treinar\" no terminal (com o .venv ativado) para treinar o classificador de arritmias.")
@@ -105,6 +86,34 @@ def exibir_aba_machine_learning() -> None:
         tabela = resultado["metricas_por_classe"][["classe", "precisao", "recall", "f1", "suporte"]].rename(columns = {"classe": "Classe", "precisao": "Precisão", "recall": "Recall", "f1": "F1", "suporte": "Suporte"})
         tabela["Classe"] = tabela["Classe"].str.title()
         st.dataframe(tabela, use_container_width = True, hide_index = True)
+
+
+def exibir_aba_metricas(metricas: list[Metrica]) -> None:
+    """Mostra os cartões de resumo, o comparativo lado a lado, a tabela detalhada e os resultados de machine learning."""
+    st.subheader("Desempenho comparado dos algoritmos")
+    exibir_cartoes_metricas(metricas)
+
+    st.divider()
+    st.subheader("Comparativo por tipo de evento")
+    st.caption("Redução de FP (%) mostra o quanto a persistência diminuiu os falsos positivos em relação ao limiar simples nesse tipo de evento.")
+    st.dataframe(montar_resumo_comparativo(metricas), use_container_width = True, hide_index = True)
+
+    st.divider()
+    st.subheader("Métricas completas por algoritmo e tipo de evento")
+    linhas = [metrica.model_dump() for metrica in metricas]
+    st.dataframe(pd.DataFrame(linhas), use_container_width = True, hide_index = True)
+
+    st.divider()
+    st.subheader("Machine learning (ECG real)")
+    st.caption("Resultado do classificador de arritmias treinado com o MIT-BIH Arrhythmia Database, independente da simulação selecionada acima — ver docs/machine_learning.md para os detalhes.")
+    exibir_resultado_ml()
+
+
+def exibir_aba_machine_learning() -> None:
+    """Mostra o resultado do classificador de arritmias treinado com ECG real (MIT-BIH), independente das simulações."""
+    st.subheader("Classificação de arritmias com machine learning (ECG real)")
+    st.caption("Modelo treinado com batimentos reais do MIT-BIH Arrhythmia Database (PhysioNet), com treino e teste separados por paciente (split DS1/DS2 de de Chazal et al., 2004). Não usa os dados simulados das outras abas — ver docs/machine_learning.md para os detalhes.")
+    exibir_resultado_ml()
 
 
 def main() -> None:
