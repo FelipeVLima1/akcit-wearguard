@@ -65,15 +65,16 @@ def exibir_aba_alertas(alertas: list[AlertaClassificado]) -> None:
     st.caption(f"{len(tabela_filtrada)} de {len(tabela)} alertas exibidos")
 
 
-def exibir_resultado_ml() -> None:
-    """Mostra os cartões, a matriz de confusão e a tabela de métricas do último modelo de ML treinado."""
+def exibir_resultado_ml(mostrar_cartoes: bool = True) -> None:
+    """Mostra a matriz de confusão e a tabela de métricas do último modelo de ML treinado, com os cartões opcionais."""
     resultado = obter_ultimo_resultado_ml()
     if resultado is None:
         st.info("Nenhum modelo treinado ainda. Rode \"python -m src.ml.treinar\" no terminal (com o .venv ativado) para treinar o classificador de arritmias.")
         return
 
-    exibir_cartoes_ml(resultado)
-    st.divider()
+    if mostrar_cartoes:
+        exibir_cartoes_ml(resultado)
+        st.divider()
 
     coluna_matriz, coluna_metricas = st.columns(2)
     with coluna_matriz:
@@ -89,9 +90,9 @@ def exibir_resultado_ml() -> None:
 
 
 def exibir_aba_metricas(metricas: list[Metrica]) -> None:
-    """Mostra os cartões de resumo, o comparativo lado a lado, a tabela detalhada e os resultados de machine learning."""
+    """Mostra os cartões de resumo (incluindo machine learning lado a lado), o comparativo e a tabela detalhada."""
     st.subheader("Desempenho comparado dos algoritmos")
-    exibir_cartoes_metricas(metricas)
+    exibir_cartoes_metricas(metricas, resultado_ml = obter_ultimo_resultado_ml())
 
     st.divider()
     st.subheader("Comparativo por tipo de evento")
@@ -104,9 +105,9 @@ def exibir_aba_metricas(metricas: list[Metrica]) -> None:
     st.dataframe(pd.DataFrame(linhas), use_container_width = True, hide_index = True)
 
     st.divider()
-    st.subheader("Machine learning (ECG real)")
-    st.caption("Resultado do classificador de arritmias treinado com o MIT-BIH Arrhythmia Database, independente da simulação selecionada acima — ver docs/machine_learning.md para os detalhes.")
-    exibir_resultado_ml()
+    st.subheader("Detalhamento do machine learning (ECG real)")
+    st.caption("Matriz de confusão e métricas por classe do classificador de arritmias — ver docs/machine_learning.md para os detalhes.")
+    exibir_resultado_ml(mostrar_cartoes = False)
 
 
 def exibir_aba_machine_learning() -> None:
