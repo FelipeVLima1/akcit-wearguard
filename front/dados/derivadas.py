@@ -26,15 +26,53 @@ def calcular_indicadores_por_algoritmo(metricas: list[Metrica]) -> dict[str, dic
         tempos_validos = [metrica.tempo_medio_deteccao for metrica in metricas_do_algoritmo if metrica.tempo_medio_deteccao is not None]
         tempo_medio_geral = sum(tempos_validos) / len(tempos_validos) if tempos_validos else None
 
+        total_eventos_reais = total_verdadeiros_positivos + total_falsos_negativos
+
         indicadores[algoritmo] = {
             "verdadeiros_positivos": total_verdadeiros_positivos,
             "falsos_positivos": total_falsos_positivos,
             "falsos_negativos": total_falsos_negativos,
             "precisao": round(total_verdadeiros_positivos / total_alertas, 3) if total_alertas > 0 else None,
             "taxa_falsos_positivos": round(total_falsos_positivos / total_alertas, 3) if total_alertas > 0 else None,
+            "taxa_deteccao": round(total_verdadeiros_positivos / total_eventos_reais, 3) if total_eventos_reais > 0 else None,
             "tempo_medio_deteccao": round(tempo_medio_geral, 2) if tempo_medio_geral is not None else None,
         }
     return indicadores
+
+
+def calcular_comparacao_binaria_ml(matriz_confusao: pd.DataFrame) -> dict:
+    """Agrupa as 5 classes do ML em normal/anômalo e calcula taxa de falso alarme e de detecção,
+    no mesmo formato usado para os algoritmos baseados em regra (para permitir comparação direta)."""
+    tabela = matriz_confusao.copy()
+    tabela["real_bin"] = tabela["classe_real"].apply(lambda classe: "normal" if classe == "normal" else "anomalo")
+    tabela["previsto_bin"] = tabela["classe_prevista"].apply(lambda classe: "normal" if classe == "normal" else "anomalo")
+
+    agregada = tabela.groupby(["real_bin", "previsto_bin"])["quantidade"].sum()
+    verdadeiros_positivos = int(agregada.get(("anomalo", "anomalo"), 0))
+    falsos_negativos = int(agregada.get(("anomalo", "normal"), 0))
+    falsos_positivos = int(agregada.get(("normal", "anomalo"), 0))
+
+    total_alertas = verdadeiros_positivos + falsos_positivos
+    total_eventos_reais = verdadeiros_positivos + falsos_negativos
+
+    return {
+        "verdadeiros_positivos": verdadeiros_positivos,
+        "falsos_positivos": falsos_positivos,
+        "falsos_negativos": falsos_negativos,
+        "taxa_falsos_positivos": round(falsos_positivos / total_alertas, 3) if total_alertas > 0 else None,
+        "taxa_deteccao": round(verdadeiros_positivos / total_eventos_reais, 3) if total_eventos_reais > 0 else None,
+    }
+
+
+def montar_tabela_comparacao_geral(indicadores: dict[str, dict], comparacao_ml: dict | None) -> pd.DataFrame:
+    """Monta a tabela final comparando taxa de falso alarme e taxa de detecção entre todas as abordagens."""
+    nomes_em_portugues = {"limiar_simples": "Limiar Simples", "persistencia": "Persistência"}
+    linhas = []
+    for algoritmo, valores in indicadores.items():
+        linhas.append({"Abordagem": nomes_em_portugues.get(algoritmo, algoritmo.title()), "Taxa de falso alarme": valores["taxa_falsos_positivos"], "Taxa de detecção": valores["taxa_deteccao"]})
+    if comparacao_ml is not None:
+        linhas.append({"Abordagem": "Machine Learning (binarizado)", "Taxa de falso alarme": comparacao_ml["taxa_falsos_positivos"], "Taxa de detecção": comparacao_ml["taxa_deteccao"]})
+    return pd.DataFrame(linhas)
 
 
 def montar_resumo_comparativo(metricas: list[Metrica]) -> pd.DataFrame:

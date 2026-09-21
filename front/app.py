@@ -15,7 +15,7 @@ from front.componentes.grafico_sinais import montar_grafico_sinal
 from front.componentes.tabela_alertas import montar_tabela_alertas
 from front.dados.consultas import obter_alertas, obter_execucao, obter_gabarito, obter_leituras, obter_metricas, obter_parametros
 from front.dados.consultas_ml import obter_ultimo_resultado_ml
-from front.dados.derivadas import montar_resumo_comparativo
+from front.dados.derivadas import calcular_comparacao_binaria_ml, calcular_indicadores_por_algoritmo, montar_resumo_comparativo, montar_tabela_comparacao_geral
 from front.estilo.tema import CSS_PERSONALIZADO
 from src.config import FAIXAS_CLINICAS
 from src.modelos import AlertaClassificado, EventoGabarito, Metrica
@@ -91,8 +91,19 @@ def exibir_resultado_ml(mostrar_cartoes: bool = True) -> None:
 
 def exibir_aba_metricas(metricas: list[Metrica]) -> None:
     """Mostra os cartões de resumo (incluindo machine learning lado a lado), o comparativo e a tabela detalhada."""
+    resultado_ml = obter_ultimo_resultado_ml()
+
     st.subheader("Desempenho comparado dos algoritmos")
-    exibir_cartoes_metricas(metricas, resultado_ml = obter_ultimo_resultado_ml())
+    exibir_cartoes_metricas(metricas, resultado_ml = resultado_ml)
+
+    st.divider()
+    st.subheader("Comparação direta: quem se sai melhor")
+    st.caption("As duas abordagens usam dados e problemas diferentes (regras sobre sinais simulados vs. classificação de ECG real), então não dá pra comparar acurácia com falsos positivos direto. Mas as duas perguntas abaixo valem para qualquer uma delas: das vezes que o sistema disse \"tem problema\", quantas estavam erradas (falso alarme)? E dos problemas reais, quantos ele pegou (detecção)? Para o ML, \"anômalo\" agrupa as 4 classes de arritmia contra \"normal\".")
+    indicadores = calcular_indicadores_por_algoritmo(metricas)
+    comparacao_ml = calcular_comparacao_binaria_ml(resultado_ml["matriz_confusao"]) if resultado_ml is not None else None
+    tabela_comparacao = montar_tabela_comparacao_geral(indicadores, comparacao_ml)
+    st.dataframe(tabela_comparacao.style.format({"Taxa de falso alarme": "{:.1%}", "Taxa de detecção": "{:.1%}"}, na_rep = "-"), use_container_width = True, hide_index = True)
+    st.caption("Quanto menor a taxa de falso alarme e maior a taxa de detecção, melhor.")
 
     st.divider()
     st.subheader("Comparativo por tipo de evento")
